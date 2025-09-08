@@ -6,7 +6,7 @@ const multer = require('multer');
 // Multer setup
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/'); // Make sure this folder exists
+    cb(null, 'uploads/');
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -14,7 +14,7 @@ const storage = multer.diskStorage({
   }
 });
 const upload = multer({ storage });
-module.exports.uploadMiddleware = upload.single('file');
+const uploadMiddleware = upload.single('file');
 
 // Get user profile
 async function getProfile(req, res) {
@@ -49,8 +49,6 @@ async function uploadFile(req, res) {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
-    // File info: req.file
-    // Deduct credits
     user.credits -= COST;
     await user.save();
     // Log credit transaction
@@ -162,5 +160,6 @@ module.exports = {
   getCredits,
   uploadFile,
   generateReport,
-  getCreditTransactions
+  getCreditTransactions,
+  uploadMiddleware
 };

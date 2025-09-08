@@ -7,8 +7,10 @@ const {
   getCredits,
   uploadFile,
   generateReport,
-  getCreditTransactions
+  getCreditTransactions,
+  uploadMiddleware
 } = require('../controllers/userController');
+const multer = require('multer');
 
 // Apply rate limiting and authentication
 router.use(generalLimiter);
@@ -17,7 +19,7 @@ router.use(authMiddleware);
 // Protected user routes
 router.get('/profile', getProfile);
 router.get('/credits', getCredits);
-router.post('/upload', uploadFile);
+router.post('/upload',uploadMiddleware, uploadFile);
 router.post('/report', generateReport);
 router.get('/transactions', getCreditTransactions);
 
