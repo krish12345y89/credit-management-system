@@ -5,7 +5,7 @@ const auditLogger = require('../utils/auditLogger');
 
 async function createCheckoutSession(req, res) {
   try {
-    const { credits, amount, currency = 'usd' } = req.body;
+    let { credits, amount, currency = 'usd' } = req.body;
     const userId = req.user._id;
     
     if (!credits || !amount) {
