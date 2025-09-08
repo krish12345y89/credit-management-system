@@ -18,6 +18,7 @@ const addCreditsSchema = Joi.object({
 
 const createApiKeySchema = Joi.object({
   name: Joi.string().min(1).max(50).required().trim(),
+  user: Joi.string().required(),
   scopes: Joi.array().items(Joi.string().valid('read', 'write', 'delete')).min(1).required(),
   expiresInDays: Joi.number().integer().min(1).max(365).default(90)
 });

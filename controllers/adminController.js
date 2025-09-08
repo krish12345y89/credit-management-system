@@ -51,13 +51,13 @@ async function addCredits(req, res) {
 // Create API key for a user
 async function createApiKey(req, res) {
   try {
-    const { name, scopes, expiresInDays } = req.body;
+    const { name, scopes, expiresInDays ,user} = req.body;
     const userId = req.user._id;
     
     // Generate API key
     const { fullKey, prefix, secret } = await generateApiKey();
     const keyHash = await hashToken(secret);
-    const expiresAt = calculateExpiry(expiresInDays);
+    const expiresAt = await calculateExpiry(expiresInDays);
     
     // Create API key record
     const apiKey = new ApiKey({
@@ -65,19 +65,19 @@ async function createApiKey(req, res) {
       keyHash,
       prefix,
       scopes,
-      owner: userId,
+      owner: user,
       expiresAt
     });
     
     await apiKey.save();
     
     // Add API key to user
-    await User.findByIdAndUpdate(userId, {
+    await User.findByIdAndUpdate(user, {
       $push: { apiKeys: apiKey._id }
     });
     
     // Log audit event
-    await auditLogger.log('admin', userId.toString(), 'api_key_created', {
+    await auditLogger.log('admin', user.toString(), 'api_key_created', {
       apiKeyId: apiKey._id.toString(),
       name,
       scopes,
@@ -100,7 +100,7 @@ async function createApiKey(req, res) {
 // Revoke API key
 async function revokeApiKey(req, res) {
   try {
-    const { apiKeyId } = req.body;
+    const { apiKeyId ,user} = req.body;
     
     const apiKey = await ApiKey.findById(apiKeyId);
     if (!apiKey) {
@@ -108,7 +108,7 @@ async function revokeApiKey(req, res) {
     }
     
     // Check if the admin owns this API key or has permission to revoke it
-    if (apiKey.owner.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    if (apiKey.owner.toString() !== user.toString() && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Not authorized to revoke this API key' });
     }
     
@@ -117,7 +117,7 @@ async function revokeApiKey(req, res) {
     await apiKey.save();
     
     // Log audit event
-    await auditLogger.log('admin', req.user._id.toString(), 'api_key_revoked', {
+    await auditLogger.log('admin', user.toString(), 'api_key_revoked', {
       apiKeyId: apiKey._id.toString()
     }, req.ip, req.get('User-Agent'));
     
