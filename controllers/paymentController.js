@@ -116,7 +116,7 @@ async function handleWebhook(req, res) {
       await creditTransaction.save();
       
       // Log audit event
-      await auditLogger.log('system', userId, 'credits_purchased', {
+      await auditLogger.log('service', userId, 'credits_purchased', {
         sessionId: session.id,
         credits,
         amount: amount / 100,
