@@ -8,7 +8,6 @@ const {
   getPaymentHistory
 } = require('../controllers/paymentController');
 
-// Apply rate limiting to all routes
 router.use(generalLimiter);
 
 // Webhook route needs raw body for Stripe verification

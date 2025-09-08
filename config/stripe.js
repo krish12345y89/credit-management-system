@@ -1,7 +1,6 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 
-// Verify Stripe webhook signature
 const verifyWebhook = (req, secret) => {
   const signature = req.headers['stripe-signature'];
   

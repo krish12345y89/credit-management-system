@@ -2,12 +2,10 @@ const User = require('../models/User');
 const CreditTransaction = require('../models/CreditTransaction');
 const auditLogger = require('../utils/auditLogger');
 
-// Get user metadata (API key access)
 async function getUserMetadata(req, res) {
   try {
     const { userId } = req.params;
     
-    // Check if the API key has read scope
     if (!req.apiKey.scopes.includes('read')) {
       return res.status(403).json({ error: 'Insufficient scope' });
     }
@@ -18,13 +16,10 @@ async function getUserMetadata(req, res) {
       return res.status(404).json({ error: 'User not found' });
     }
     
-    // Check if API key owner has access to this user's data
-    // In a real implementation, you might have more complex access rules
     if (req.apiKey.owner._id.toString() !== userId && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Access denied' });
     }
     
-    // Get recent credit transactions
     const recentTransactions = await CreditTransaction.find({ userId })
       .sort({ createdAt: -1 })
       .limit(10);
@@ -45,28 +40,19 @@ async function getUserMetadata(req, res) {
   }
 }
 
-// Get user reports (API key access)
 async function getUserReports(req, res) {
   try {
     const { userId } = req.params;
     
-    // Check if the API key has read scope
     if (!req.apiKey.scopes.includes('read')) {
       return res.status(403).json({ error: 'Insufficient scope' });
     }
     
-    // In a real implementation, you would fetch actual reports from a database
-    // For this example, we'll return mock data
-    
-    // Simulate credit consumption for this operation
-    const COST = 1;
     const user = await User.findById(userId);
-    
     if (user.credits < COST) {
       return res.status(402).json({ error: 'Insufficient credits' });
     }
     
-    // Deduct credits
     user.credits -= COST;
     await user.save();
     
@@ -81,25 +67,23 @@ async function getUserReports(req, res) {
     
     await creditTransaction.save();
     
-    // Log audit event
     await auditLogger.log('service', req.apiKey._id.toString(), 'api_report_access', {
       targetUserId: userId,
       cost: COST,
       creditsRemaining: user.credits
     }, req.ip, req.get('User-Agent'));
     
-    // Return mock reports
     const mockReports = [
       {
         id: 'report_001',
         name: 'Monthly Usage Report',
-        generatedAt: new Date(Date.now() - 86400000), // 1 day ago
+        generatedAt: new Date(Date.now() - 86400000), 
         downloadUrl: `/api/reports/report_001/download`
       },
       {
         id: 'report_002',
         name: 'Quarterly Analytics',
-        generatedAt: new Date(Date.now() - 2592000000), // 30 days ago
+        generatedAt: new Date(Date.now() - 2592000000),
         downloadUrl: `/api/reports/report_002/download`
       }
     ];

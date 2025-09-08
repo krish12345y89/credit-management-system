@@ -6,13 +6,11 @@ const connectDB = require('../config/database');
 
 async function seedAdmin() {
   try {
-    // Connect to database
     await connectDB();
     
     const adminEmail = process.env.ADMIN_INITIAL_EMAIL;
     const adminPassword = process.env.ADMIN_INITIAL_PASSWORD;
     
-    // Check if admin already exists
     const existingAdmin = await User.findOne({ email: adminEmail });
     
     if (existingAdmin) {
@@ -20,7 +18,6 @@ async function seedAdmin() {
       process.exit(0);
     }
     
-    // Create admin user
     const passwordHash = await bcrypt.hash(adminPassword, 12);
     const adminUser = new User({
       email: adminEmail,

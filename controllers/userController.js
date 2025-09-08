@@ -3,7 +3,6 @@ const CreditTransaction = require('../models/CreditTransaction');
 const auditLogger = require('../utils/auditLogger');
 const multer = require('multer');
 
-// Multer setup
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, '/tmp');
@@ -84,7 +83,6 @@ async function uploadFile(req, res) {
   }
 }
 
-// Generate report (consumes credits)
 async function generateReport(req, res) {
   try {
     const COST = 5;
@@ -94,11 +92,9 @@ async function generateReport(req, res) {
       return res.status(402).json({ error: 'Insufficient credits' });
     }
     
-    // Deduct credits
     user.credits -= COST;
     await user.save();
     
-    // Log credit transaction
     const creditTransaction = new CreditTransaction({
       userId: user._id,
       type: 'consumption',
@@ -109,7 +105,6 @@ async function generateReport(req, res) {
     
     await creditTransaction.save();
     
-    // Log audit event
     await auditLogger.log('user', user._id.toString(), 'report_generated', {
       cost: COST,
       creditsRemaining: user.credits
@@ -126,7 +121,6 @@ async function generateReport(req, res) {
   }
 }
 
-// Get credit transactions
 async function getCreditTransactions(req, res) {
   try {
     const page = parseInt(req.query.page) || 1;

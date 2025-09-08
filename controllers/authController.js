@@ -4,12 +4,10 @@ const { hashPassword, hashToken, compareTokenHash } = require('../utils/crypto')
 const { generateAccessToken, generateRefreshToken, calculateExpiry } = require('../utils/tokens');
 const auditLogger = require('../utils/auditLogger');
 
-// Sign up a new user
 async function signup(req, res) {
   try {
     const { email, password, name } = req.body;
 
-    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(409).json({ error: 'User already exists' });
@@ -24,12 +22,11 @@ async function signup(req, res) {
     }
 
 
-    // Create user
     const user = new User({
       email,
       passwordHash,
       name,
-      credits: 50 // Initial free credits
+  credits: 50
     });
 
     const userCreated = await user.save();
@@ -40,7 +37,6 @@ async function signup(req, res) {
       console.log("user failed to be created successfully");
     }
 
-    // Log credit transaction for signup bonus
     const creditTransaction = new CreditTransaction({
       userId: user._id,
       type: 'signup_bonus',
@@ -57,19 +53,16 @@ async function signup(req, res) {
       console.log("transaction failed to be created successfully");
     }
 
-    // Log audit event
     await auditLogger.log('user', user._id.toString(), 'signup', {
       email: user.email,
       name: user.name
     }, req.ip, req.get('User-Agent'));
 
-    // Generate tokens
     const accessToken = await generateAccessToken(user._id, user.role);
     const refreshToken = await generateRefreshToken();
     const refreshTokenHash = await hashToken(refreshToken);
     const refreshTokenExpiry = await calculateExpiry(7); // 7 days
 
-    // Store refresh token
     user.refreshTokens.push({
       tokenHash: refreshTokenHash,
       expiresAt: refreshTokenExpiry
@@ -77,25 +70,21 @@ async function signup(req, res) {
 
     await user.save();
 
-    // Set refresh token as HTTP-only cookie
 
-    // Set refresh token as HTTP-only cookie
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
       secure: process.env.COOKIE_SECURE === 'true',
       sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+  maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
-    // Set access token as HTTP-only cookie
     res.cookie('access_token', accessToken, {
       httpOnly: true,
       secure: process.env.COOKIE_SECURE === 'true',
       sameSite: 'lax',
-      maxAge: 15 * 60 * 1000 // 15 minutes (adjust as needed)
+  maxAge: 15 * 60 * 1000
     });
 
-    // Return response
     res.status(201).json({
       message: 'User created successfully',
       accessToken,
@@ -113,39 +102,32 @@ async function signup(req, res) {
   }
 }
 
-// Login user
 async function login(req, res) {
   try {
     const { email, password } = req.body;
 
-    // Find user
     const user = await User.findOne({ email, isActive: true });
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Check password
     const isPasswordValid = await user.checkPassword(password);
     if (!isPasswordValid) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Update last login
     user.lastLogin = new Date();
     await user.save();
 
-    // Log audit event
     await auditLogger.log('user', user._id.toString(), 'login', {
       email: user.email
     }, req.ip, req.get('User-Agent'));
 
-    // Generate tokens
   const accessToken = await generateAccessToken(user._id, user.role);
   const refreshToken = await generateRefreshToken();
   const refreshTokenHash = await hashToken(refreshToken);
   const refreshTokenExpiry = await calculateExpiry(7); // 7 days
 
-    // Store refresh token
     user.refreshTokens.push({
       tokenHash: refreshTokenHash,
       expiresAt: refreshTokenExpiry
@@ -153,25 +135,21 @@ async function login(req, res) {
 
     await user.save();
 
-    // Set refresh token as HTTP-only cookie
 
-    // Set refresh token as HTTP-only cookie
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
       secure: process.env.COOKIE_SECURE === 'true',
       sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+  maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
-    // Set access token as HTTP-only cookie
     res.cookie('access_token', accessToken, {
       httpOnly: true,
       secure: process.env.COOKIE_SECURE === 'true',
       sameSite: 'lax',
-      maxAge: 15 * 60 * 1000 // 15 minutes (adjust as needed)
+  maxAge: 15 * 60 * 1000
     });
 
-    // Return response
     res.json({
       accessToken,
       user: {
@@ -188,7 +166,6 @@ async function login(req, res) {
   }
 }
 
-// Refresh access token
 async function refreshToken(req, res) {
   try {
     const refreshToken = req.cookies.refresh_token;
@@ -197,7 +174,6 @@ async function refreshToken(req, res) {
       return res.status(401).json({ error: 'Refresh token required' });
     }
 
-    // Find user with this refresh token
     const users = await User.find({ 'refreshTokens.expiresAt': { $gte: new Date() } });
     let tokenOwner = null;
     let tokenIndex = -1;
@@ -220,16 +196,13 @@ async function refreshToken(req, res) {
       return res.status(401).json({ error: 'Invalid refresh token' });
     }
 
-    // Remove the used refresh token
     tokenOwner.refreshTokens.splice(tokenIndex, 1);
 
-    // Generate new tokens
   const newAccessToken = await generateAccessToken(tokenOwner._id, tokenOwner.role);
   const newRefreshToken = await generateRefreshToken();
   const newRefreshTokenHash = await hashToken(newRefreshToken);
   const newRefreshTokenExpiry = await calculateExpiry(7); // 7 days
 
-    // Store new refresh token
     tokenOwner.refreshTokens.push({
       tokenHash: newRefreshTokenHash,
       expiresAt: newRefreshTokenExpiry
@@ -237,10 +210,8 @@ async function refreshToken(req, res) {
 
     await tokenOwner.save();
 
-    // Log audit event
     await auditLogger.log('user', tokenOwner._id.toString(), 'token_refreshed', {}, req.ip, req.get('User-Agent'));
 
-    // Set new refresh token as HTTP-only cookie
     res.cookie('refresh_token', newRefreshToken, {
       httpOnly: true,
       secure: process.env.COOKIE_SECURE === 'true',
@@ -248,7 +219,6 @@ async function refreshToken(req, res) {
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
-    // Return new access token
     res.json({ accessToken: newAccessToken });
   } catch (error) {
     console.error('Token refresh error:', error);
@@ -256,13 +226,11 @@ async function refreshToken(req, res) {
   }
 }
 
-// Logout user
 async function logout(req, res) {
   try {
     const refreshToken = req.cookies.refresh_token;
 
     if (refreshToken) {
-      // Find and remove the refresh token
       const users = await User.find({});
       let found = false;
       for (const user of users) {
@@ -277,9 +245,7 @@ async function logout(req, res) {
         }
         if (found) break;
       }
-      // Clear refresh token cookie
       res.clearCookie('refresh_token');
-      // Log audit event
       if (req.user && req.user._id) {
         await auditLogger.log('user', req.user._id.toString(), 'logout', {}, req.ip, req.get('User-Agent'));
       }

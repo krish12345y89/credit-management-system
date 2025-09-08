@@ -1,24 +1,21 @@
 const rateLimit = require('express-rate-limit');
 
-// General rate limiter
 const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000, 
+  max: 100, 
   message: { error: 'Too many requests, please try again later.' }
 });
 
-// Strict limiter for auth endpoints
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 login attempts per windowMs
+  windowMs: 15 * 60 * 1000, 
+  max: 5, 
   message: { error: 'Too many login attempts, please try again later.' },
-  skipSuccessfulRequests: true // don't count successful requests
+  skipSuccessfulRequests: true 
 });
 
-// API key rate limiting
 const apiKeyLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // higher limit for API keys
+  windowMs: 15 * 60 * 1000, 
+  max: 1000,
   keyGenerator: (req) => {
     return req.apiKey ? req.apiKey._id.toString() : req.ip;
   },

@@ -17,7 +17,7 @@ const {
 // Apply rate limiting and authentication
 router.use(generalLimiter);
 router.use(authMiddleware);
-// router.use(requireRole('admin'));
+router.use(requireRole('admin'));
 
 // Protected admin routes
 router.post('/credits', validateAddCredits, addCredits);

@@ -12,7 +12,6 @@ const {
 } = require('../controllers/userController');
 const multer = require('multer');
 
-// Apply rate limiting and authentication
 router.use(generalLimiter);
 router.use(authMiddleware);
 

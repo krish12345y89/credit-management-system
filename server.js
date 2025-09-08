@@ -3,6 +3,9 @@ const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const mongoSanitize = require('express-mongo-sanitize');
+const xss = require('xss-clean');
+const csrf = require('csurf');
 const connectDB = require('./config/database');
 
 // Import routes
@@ -26,6 +29,18 @@ app.use(cors({
   credentials: true
 }));
 app.use(cookieParser());
+app.use(mongoSanitize()); // Prevent NoSQL injection
+app.use(xss()); // Prevent XSS
+
+// CSRF protection (for cookie-based auth)
+if (process.env.NODE_ENV === 'production') {
+  app.use(csrf({ cookie: true }));
+  app.use((req, res, next) => {
+    res.cookie('XSRF-TOKEN', req.csrfToken());
+    next();
+  });
+}
+// SSRF protection: Never fetch user-provided URLs directly. Always validate/whitelist if needed.
 
 // Stripe webhook route (must be before express.json)
 app.use('/api/payments', paymentsRouter);

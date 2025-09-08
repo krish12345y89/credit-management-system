@@ -4,12 +4,10 @@ const User = require('../models/User');
 const authMiddleware = async (req, res, next) => {
   try {
     let token;
-    // Check Authorization header
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
       token = authHeader.split(' ')[1];
     } else if (req.cookies && req.cookies.access_token) {
-      // Fallback to access_token cookie
       token = req.cookies.access_token;
     }
     if (!token) {
