@@ -1,0 +1,89 @@
+1. Auth Routes (/api/auth)
+POST /api/auth/signup
+→ authController.signup(req, res)
+
+Input: { email, password, name }
+Output: { message, accessToken, user }
+POST /api/auth/login
+→ authController.login(req, res)
+
+Input: { email, password }
+Output: { accessToken, user }
+POST /api/auth/refresh
+→ authController.refreshToken(req, res)
+
+Input: (refresh_token cookie)
+Output: { accessToken }
+POST /api/auth/logout
+→ authController.logout(req, res)
+
+Input: (refresh_token cookie)
+Output: { message }
+2. User Routes (/api/user)
+GET /api/user/profile
+→ userController.getProfile(req, res)
+
+Input: (access_token)
+Output: { user }
+GET /api/user/credits
+→ userController.getCredits(req, res)
+
+Input: (access_token)
+Output: { credits }
+POST /api/user/upload
+→ uploadMiddleware, then userController.uploadFile(req, res)
+
+Input: (access_token, file in form-data)
+Output: { message, credits, file }
+POST /api/user/report
+→ userController.generateReport(req, res)
+
+Input: (access_token, report params)
+Output: { message, credits, reportId }
+GET /api/user/transactions
+→ userController.getCreditTransactions(req, res)
+
+Input: (access_token, pagination)
+Output: { transactions, pagination }
+3. Admin Routes (/api/admin)
+POST /api/admin/credits
+→ adminController.addCredits(req, res)
+
+Input: { userId, amount }
+Output: { message, credits }
+POST /api/admin/api-key
+→ adminController.createApiKey(req, res)
+
+Input: { name, scopes, expiresInDays }
+Output: { apiKey, expiresAt }
+GET /api/admin/users
+→ adminController.getUsers(req, res)
+
+Input: (access_token)
+Output: { users, pagination }
+4. Payments Routes (/api/payments)
+POST /api/payments/create-checkout-session
+→ paymentController.createCheckoutSession(req, res)
+
+Input: { credits, amount, currency }
+Output: { sessionId, url }
+POST /api/payments/webhook
+→ paymentController.handleWebhook(req, res)
+
+Input: (Stripe webhook payload)
+Output: { received: true }
+GET /api/payments/history
+→ paymentController.getPaymentHistory(req, res)
+
+Input: (access_token, pagination)
+Output: { transactions, pagination }
+General Flow
+Route (Express router)
+↓
+Middleware (auth, rateLimit, upload, etc.)
+↓
+Controller (business logic, DB ops, audit log)
+↓
+Model (Mongoose: User, ApiKey, CreditTransaction, etc.)
+↓
+Response (JSON, status codes, cookies if needed)
