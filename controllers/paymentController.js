@@ -3,13 +3,11 @@ const User = require('../models/User');
 const CreditTransaction = require('../models/CreditTransaction');
 const auditLogger = require('../utils/auditLogger');
 
-// Create Stripe checkout session
 async function createCheckoutSession(req, res) {
   try {
     const { credits, amount, currency = 'usd' } = req.body;
     const userId = req.user._id;
     
-    // Validate input
     if (!credits || !amount) {
       return res.status(400).json({ error: 'Credits and amount are required' });
     }
@@ -17,8 +15,7 @@ async function createCheckoutSession(req, res) {
     if (amount < 50) { // Minimum $0.50
       return res.status(400).json({ error: 'Amount must be at least $0.50' });
     }
-    
-    // Create checkout session
+    credits=amount*10;
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -29,7 +26,7 @@ async function createCheckoutSession(req, res) {
               name: `${credits} Credits`,
               description: `Purchase ${credits} credits for the SaaS platform`
             },
-            unit_amount: amount, // Amount in cents
+            unit_amount: amount, 
           },
           quantity: 1,
         },
@@ -62,7 +59,6 @@ async function createCheckoutSession(req, res) {
   }
 }
 
-// Handle Stripe webhook
 async function handleWebhook(req, res) {
   try {
     const sig = req.headers['stripe-signature'];
@@ -79,27 +75,22 @@ async function handleWebhook(req, res) {
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
     
-    // Handle the checkout.session.completed event
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
       
-      // Extract metadata
       const userId = session.metadata.userId;
       const credits = parseInt(session.metadata.credits, 10);
-      const amount = session.amount_total; // in cents
+      const amount = session.amount_total; 
       
-      // Find user
       const user = await User.findById(userId);
       if (!user) {
         console.error('User not found for webhook:', userId);
         return res.status(404).json({ error: 'User not found' });
       }
-      
-      // Add credits to user
+  
       user.credits += credits;
       await user.save();
       
-      // Log credit transaction
       const creditTransaction = new CreditTransaction({
         userId: user._id,
         type: 'purchase',
@@ -133,7 +124,6 @@ async function handleWebhook(req, res) {
   }
 }
 
-// Get payment history
 async function getPaymentHistory(req, res) {
   try {
     const userId = req.user._id;
