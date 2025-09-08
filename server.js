@@ -10,6 +10,8 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const adminRoutes = require('./routes/admin');
 const paymentRoutes = require('./routes/payments');
+const paymentsRouter = require('express').Router();
+paymentsRouter.post('/webhook', require('express').raw({ type: 'application/json' }), require('./controllers/paymentController').handleWebhook);
 const serviceRoutes = require('./routes/service');
 
 // Connect to database
@@ -24,6 +26,10 @@ app.use(cors({
   credentials: true
 }));
 app.use(cookieParser());
+
+// Stripe webhook route (must be before express.json)
+app.use('/api/payments', paymentsRouter);
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -31,6 +37,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/admin', adminRoutes);
+// All other payment routes (after express.json)
 app.use('/api/payments', paymentRoutes);
 app.use('/api/service', serviceRoutes);
 

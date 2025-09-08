@@ -1,6 +1,20 @@
 const User = require('../models/User');
 const CreditTransaction = require('../models/CreditTransaction');
 const auditLogger = require('../utils/auditLogger');
+const multer = require('multer');
+
+// Multer setup
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/'); // Make sure this folder exists
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + '-' + file.originalname);
+  }
+});
+const upload = multer({ storage });
+module.exports.uploadMiddleware = upload.single('file');
 
 // Get user profile
 async function getProfile(req, res) {
@@ -29,38 +43,42 @@ async function uploadFile(req, res) {
   try {
     const COST = 10;
     const user = await User.findById(req.user._id);
-    
     if (user.credits < COST) {
       return res.status(402).json({ error: 'Insufficient credits' });
     }
-    
-    // skipped for this time
-    
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+    // File info: req.file
     // Deduct credits
     user.credits -= COST;
     await user.save();
-    
     // Log credit transaction
     const creditTransaction = new CreditTransaction({
       userId: user._id,
       type: 'consumption',
       amount: -COST,
       balanceAfter: user.credits,
-      description: 'File upload'
+      description: 'File upload',
+      reference: { filename: req.file.filename, path: req.file.path }
     });
-    
     await creditTransaction.save();
-    
     // Log audit event
     await auditLogger.log('user', user._id.toString(), 'file_upload', {
       cost: COST,
-      creditsRemaining: user.credits
+      creditsRemaining: user.credits,
+      filename: req.file.filename
     }, req.ip, req.get('User-Agent'));
-    
     res.json({ 
       message: 'File uploaded successfully', 
       credits: user.credits,
-      fileId: `file_${Date.now()}`
+      file: {
+        originalname: req.file.originalname,
+        filename: req.file.filename,
+        path: req.file.path,
+        size: req.file.size,
+        mimetype: req.file.mimetype
+      }
     });
   } catch (error) {
     console.error('Upload file error:', error);
