@@ -212,7 +212,7 @@ async function refreshToken(req, res) {
 
     await auditLogger.log('user', tokenOwner._id.toString(), 'token_refreshed', {}, req.ip, req.get('User-Agent'));
 
-    res.cookie('refresh_token', newRefreshToken, {
+    res.cookie('access_token', newAccessToken, {
       httpOnly: true,
       secure: process.env.COOKIE_SECURE === 'true',
       sameSite: 'lax',
