@@ -1,5 +1,3 @@
-Got it 🚀 You want me to turn your route list + flow into a **README-style architecture doc**. Here’s a clean version:
-
 ---
 
 # 🔐 Backend API Architecture
